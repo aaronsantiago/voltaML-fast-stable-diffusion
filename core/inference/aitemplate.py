@@ -445,18 +445,18 @@ class AITemplateStableDiffusion(InferenceModel):
 
             total_images.extend(images)
 
-        websocket_manager.broadcast_sync(
-            data=Data(
-                data_type="controlnet",
-                data={
-                    "progress": 0,
-                    "current_step": 0,
-                    "total_steps": 0,
-                    "image": convert_images_to_base64_grid(
-                        total_images, quality=90, image_format="webp"
-                    ),
-                },
-            )
-        )
+        # websocket_manager.broadcast_sync(
+        #     data=Data(
+        #         data_type="controlnet",
+        #         data={
+        #             "progress": 0,
+        #             "current_step": 0,
+        #             "total_steps": 0,
+        #             "image": convert_images_to_base64_grid(
+        #                 total_images, quality=90, image_format="webp"
+        #             ),
+        #         },
+        #     )
+        # )
 
         return total_images
