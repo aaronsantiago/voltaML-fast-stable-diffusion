@@ -25,6 +25,9 @@ export default defineConfig({
 		],
 	],
 	themeConfig: {
+		search: {
+			provider: "local",
+		},
 		nav: [
 			{ text: "Home", link: "/" },
 			{ text: "Docs", link: "/getting-started/introduction" },
@@ -74,6 +77,19 @@ export default defineConfig({
 				collapsed: false,
 			},
 			{
+				text: "Basics",
+				items: [
+					{ text: "Models", link: "/basics/models" },
+					{ text: "LoRA", link: "/basics/lora" },
+					{ text: "Textual Inversion", link: "/basics/textual-inversion" },
+					{
+						text: "AITemplate Acceleration",
+						link: "/basics/aitemplate",
+					},
+				],
+				collapsed: false,
+			},
+			{
 				text: "WebUI",
 				items: [
 					{ text: "Models", link: "/webui/models" },
@@ -104,10 +120,6 @@ export default defineConfig({
 				items: [
 					{ text: "xFormers", link: "/experimental/xformers" },
 					{ text: "Settings", link: "/experimental/settings" },
-					{
-						text: "Safetensors/CKPT support",
-						link: "/experimental/checkpoints",
-					},
 				],
 				collapsed: false,
 			},
@@ -151,11 +163,6 @@ export default defineConfig({
 				collapsed: false,
 			},
 		],
-		algolia: {
-			appId: "M9XJK5W9ML",
-			apiKey: "8447ad2a43b65f2c280b8c883c76dc3f",
-			indexName: "voltaml-fast-stable-diffusion",
-		},
 	},
 	cleanUrls: true,
 	ignoreDeadLinks: "localhostLinks",

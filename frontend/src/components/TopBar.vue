@@ -120,7 +120,7 @@
                           type="info"
                           style="margin-left: 4px"
                           ghost
-                          @click="selectedModel = model"
+                          @click="global.state.selected_model = model"
                           :disabled="model.state !== 'loaded'"
                           >Select</NButton
                         >
@@ -132,7 +132,11 @@
                 <!-- LoRA -->
                 <NGi>
                   <NCard :title="lora_title">
-                    <NCard style="width: 100%; margin-bottom: 8px">
+                    <NCard
+                      style="width: 100%; margin-bottom: 8px"
+                      title="LoRA strength"
+                      header-style="padding-bottom: 0; font-size: 16px"
+                    >
                       <div class="flex-container">
                         <p class="slider-label">Text Encoder</p>
                         <NSlider
@@ -176,14 +180,18 @@
                           type="error"
                           ghost
                           disabled
-                          v-if="selectedModel?.loras.includes(lora.path)"
+                          v-if="
+                            global.state.selected_model?.loras.includes(
+                              lora.path
+                            )
+                          "
                           >Loaded</NButton
                         >
                         <NButton
                           type="success"
                           ghost
                           @click="loadLoRA(lora)"
-                          :disabled="selectedModel === undefined"
+                          :disabled="global.state.selected_model === undefined"
                           :loading="lora.state === 'loading'"
                           v-else
                           >Load</NButton
@@ -222,7 +230,9 @@
                           ghost
                           disabled
                           v-if="
-                            selectedModel?.loras.includes(textualInversion.path)
+                            global.state.selected_model?.textual_inversions.includes(
+                              textualInversion.path
+                            )
                           "
                           >Loaded</NButton
                         >
@@ -230,7 +240,7 @@
                           type="success"
                           ghost
                           @click="loadTextualInversion(textualInversion)"
-                          :disabled="selectedModel === undefined"
+                          :disabled="global.state.selected_model === undefined"
                           :loading="textualInversion.state === 'loading'"
                           v-else
                           >Load</NButton
@@ -252,6 +262,40 @@
                     border-bottom: 1px solid rgb(66, 66, 71);
                   "
                   v-for="model in aitModels"
+                  v-bind:key="model.path"
+                >
+                  <p>{{ model.name }}</p>
+                  <div>
+                    <NButton
+                      type="error"
+                      ghost
+                      @click="unloadModel(model)"
+                      v-if="model.state === 'loaded'"
+                      >Unload</NButton
+                    >
+                    <NButton
+                      type="success"
+                      ghost
+                      @click="loadModel(model)"
+                      :loading="model.state === 'loading'"
+                      v-else
+                      >Load</NButton
+                    >
+                  </div>
+                </div>
+              </NCard>
+            </NTabPane>
+            <NTabPane name="ONNX">
+              <NCard title="Models" style="height: 100%">
+                <div
+                  style="
+                    display: inline-flex;
+                    width: 100%;
+                    align-items: center;
+                    justify-content: space-between;
+                    border-bottom: 1px solid rgb(66, 66, 71);
+                  "
+                  v-for="model in onnxModels"
                   v-bind:key="model.path"
                 >
                   <p>{{ model.name }}</p>
@@ -419,33 +463,63 @@ const filteredModels = computed(() => {
 });
 
 const pyTorchModels = computed(() => {
-  return filteredModels.value.filter((model) => {
-    return model.backend === "PyTorch" && model.valid === true;
-  });
+  return filteredModels.value
+    .filter((model) => {
+      return model.backend === "PyTorch" && model.valid === true;
+    })
+    .sort((a, b) => {
+      return a.name.localeCompare(b.name);
+    });
 });
 
 const aitModels = computed(() => {
-  return filteredModels.value.filter((model) => {
-    return model.backend === "AITemplate";
-  });
+  return filteredModels.value
+    .filter((model) => {
+      return model.backend === "AITemplate";
+    })
+    .sort((a, b) => {
+      return a.name.localeCompare(b.name);
+    });
+});
+
+const onnxModels = computed(() => {
+  return filteredModels.value
+    .filter((model) => {
+      return model.backend === "ONNX";
+    })
+    .sort((a, b) => {
+      return a.name.localeCompare(b.name);
+    });
 });
 
 const trtModels = computed(() => {
-  return filteredModels.value.filter((model) => {
-    return model.backend === "TensorRT";
-  });
+  return filteredModels.value
+    .filter((model) => {
+      return model.backend === "TensorRT";
+    })
+    .sort((a, b) => {
+      return a.name.localeCompare(b.name);
+    });
 });
 
 const loraModels = computed(() => {
-  return filteredModels.value.filter((model) => {
-    return model.backend === "LoRA";
-  });
+  return filteredModels.value
+    .filter((model) => {
+      return model.backend === "LoRA";
+    })
+    .sort((a, b) => {
+      return a.name.localeCompare(b.name);
+    });
 });
 
 const textualInversionModels = computed(() => {
-  return filteredModels.value.filter((model) => {
-    return model.backend === "Textual Inversion";
-  });
+  return filteredModels.value
+    .filter((model) => {
+      return model.backend === "Textual Inversion";
+    })
+    .sort((a, b) => {
+      return a.name.localeCompare(b.name);
+    });
 });
 
 function refreshModels() {
@@ -493,6 +567,7 @@ function refreshModels() {
             const allLoaded = [
               ...loadedPyTorchModels.value,
               ...loadedAitModels.value,
+              ...loadedOnnxModels.value,
               ...loadedExtraModels.value,
             ];
 
@@ -554,6 +629,10 @@ async function loadModel(model: ModelEntry) {
 }
 
 async function unloadModel(model: ModelEntry) {
+  if (model === global.state.selected_model) {
+    global.state.selected_model = null;
+  }
+
   const load_url = new URL(`${serverUrl}/api/models/unload`);
   const params = { model: model.name };
   load_url.search = new URLSearchParams(params).toString();
@@ -568,7 +647,7 @@ async function unloadModel(model: ModelEntry) {
 }
 
 async function loadLoRA(lora: ModelEntry) {
-  if (selectedModel.value) {
+  if (global.state.selected_model) {
     try {
       await fetch(`${serverUrl}/api/models/load-lora`, {
         method: "POST",
@@ -576,13 +655,13 @@ async function loadLoRA(lora: ModelEntry) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: selectedModel.value.name,
+          model: global.state.selected_model.name,
           lora: lora.path,
           unet_weight: conf.data.settings.api.lora_unet_weight,
           text_encoder_weight: conf.data.settings.api.lora_text_encoder_weight,
         }),
       });
-      selectedModel.value.loras.push(lora.path);
+      global.state.selected_model.loras.push(lora.path);
     } catch (e) {
       console.error(e);
     }
@@ -592,7 +671,7 @@ async function loadLoRA(lora: ModelEntry) {
 }
 
 async function loadTextualInversion(textualInversion: ModelEntry) {
-  if (selectedModel.value) {
+  if (global.state.selected_model) {
     try {
       await fetch(`${serverUrl}/api/models/load-textual-inversion`, {
         method: "POST",
@@ -600,11 +679,13 @@ async function loadTextualInversion(textualInversion: ModelEntry) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: selectedModel.value.name,
+          model: global.state.selected_model.name,
           textual_inversion: textualInversion.path,
         }),
       });
-      selectedModel.value.loras.push(textualInversion.path);
+      global.state.selected_model.textual_inversions.push(
+        textualInversion.path
+      );
     } catch (e) {
       console.error(e);
     }
@@ -686,6 +767,11 @@ const loadedAitModels = computed(() => {
     return model.backend === "AITemplate" && model.state === "loaded";
   });
 });
+const loadedOnnxModels = computed(() => {
+  return global.state.models.filter((model) => {
+    return model.backend === "ONNX" && model.state === "loaded";
+  });
+});
 const loadedExtraModels = computed(() => {
   return global.state.models.filter((model) => {
     return model.backend === "unknown" && model.state === "loaded";
@@ -720,6 +806,20 @@ const aitOptions: ComputedRef<SelectMixedOption> = computed(() => {
   };
 });
 
+const onnxOptions: ComputedRef<SelectMixedOption> = computed(() => {
+  return {
+    type: "group",
+    label: "ONNX",
+    key: "onnx",
+    children: loadedOnnxModels.value.map((model) => {
+      return {
+        label: model.name,
+        value: `${model.path}:ONNX`,
+      };
+    }),
+  };
+});
+
 const extraOptions: ComputedRef<SelectMixedOption> = computed(() => {
   return {
     type: "group",
@@ -735,22 +835,30 @@ const extraOptions: ComputedRef<SelectMixedOption> = computed(() => {
 });
 
 const generatedModelOptions: ComputedRef<SelectMixedOption[]> = computed(() => {
-  return [pyTorchOptions.value, aitOptions.value, extraOptions.value];
+  return [
+    pyTorchOptions.value,
+    aitOptions.value,
+    onnxOptions.value,
+    extraOptions.value,
+  ];
 });
 
 const message = useMessage();
 
 const showModal = ref(false);
-const selectedModel = ref<ModelEntry>();
 const lora_title = computed(() => {
   return `LoRA (${
-    selectedModel.value ? selectedModel.value.name : "No model selected"
+    global.state.selected_model
+      ? global.state.selected_model.name
+      : "No model selected"
   })`;
 });
 
 const textual_inversions_title = computed(() => {
   return `Textual Inversions (${
-    selectedModel.value ? selectedModel.value.name : "No model selected"
+    global.state.selected_model
+      ? global.state.selected_model.name
+      : "No model selected"
   })`;
 });
 

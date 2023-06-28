@@ -1,5 +1,6 @@
 <template>
   <NConfigProvider :theme="theme" :theme-overrides="overrides" class="main">
+    <NThemeEditor v-if="settings.data.settings.frontend.enable_theme_editor" />
     <NNotificationProvider placement="bottom-right">
       <NMessageProvider>
         <CollapsileNavbarVue />
@@ -16,6 +17,7 @@ import {
   NConfigProvider,
   NMessageProvider,
   NNotificationProvider,
+  NThemeEditor,
   darkTheme,
   lightTheme,
   type GlobalThemeOverrides,

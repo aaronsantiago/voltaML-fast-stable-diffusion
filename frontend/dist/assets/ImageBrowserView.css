@@ -1,12 +1,21 @@
 
-.img-slider[data-v-83798405] {
+.img-slider[data-v-00cbea3d] {
   aspect-ratio: 1/1;
   height: 182px;
   width: auto;
 }
-.img-container[data-v-83798405]:not(:last-child) {
-  margin-right: 6px;
+.image-grid[data-v-00cbea3d] {
+  display: grid;
+  grid-template-columns: repeat(
+    var(--1f7ee6b5),
+    1fr
+  );
+  grid-gap: 8px;
 }
-.img-container[data-v-83798405] {
-  cursor: pointer;
+.top-bar[data-v-00cbea3d] {
+  background-color: var(--54303593);
+}
+.image-column[data-v-00cbea3d] {
+  display: flex;
+  flex-direction: column;
 }

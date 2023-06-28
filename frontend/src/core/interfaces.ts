@@ -22,13 +22,14 @@ export interface ModelEntry {
     | "TensorRT"
     | "PyTorch"
     | "AITemplate"
+    | "ONNX"
     | "unknown"
     | "LoRA"
     | "Textual Inversion";
   valid: boolean;
   state: "loading" | "loaded" | "not loaded";
   loras: string[];
-  textua_inversions: string[];
+  textual_inversions: string[];
 }
 
 export enum ControlNetType {

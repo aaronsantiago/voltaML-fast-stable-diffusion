@@ -12,13 +12,21 @@
     <NTabPane name="Inpainting">
       <InpaintingSettings />
     </NTabPane>
+    <NTabPane name="Image Browser">
+      <ImageBrowserSettings />
+    </NTabPane>
+    <NTabPane name="Theme">
+      <ThemeSettings />
+    </NTabPane>
   </NTabs>
 </template>
 
 <script lang="ts" setup>
 import { NTabPane, NTabs } from "naive-ui";
-import ControlNetSettings from "./FrontendSettings/ControlNetSettings.vue";
-import ImageToImageSettings from "./FrontendSettings/ImageToImageSettings.vue";
-import InpaintingSettings from "./FrontendSettings/InpaintingSettings.vue";
-import TextToImageSettings from "./FrontendSettings/TextToImageSettings.vue";
+import ControlNetSettings from "./DefaultsSettings/ControlNetSettings.vue";
+import ImageBrowserSettings from "./DefaultsSettings/ImageBrowserSettings.vue";
+import ImageToImageSettings from "./DefaultsSettings/ImageToImageSettings.vue";
+import InpaintingSettings from "./DefaultsSettings/InpaintingSettings.vue";
+import TextToImageSettings from "./DefaultsSettings/TextToImageSettings.vue";
+import ThemeSettings from "./DefaultsSettings/ThemeSettings.vue";
 </script>

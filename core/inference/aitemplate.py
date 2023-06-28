@@ -8,7 +8,7 @@ from diffusers.models.autoencoder_kl import AutoencoderKL
 from diffusers.models.unet_2d_condition import UNet2DConditionModel
 from PIL import Image
 from rich.console import Console
-from transformers import CLIPFeatureExtractor
+from transformers.models.clip import CLIPFeatureExtractor
 from transformers.models.clip.modeling_clip import CLIPTextModel
 from transformers.models.clip.tokenization_clip import CLIPTokenizer
 
@@ -298,14 +298,15 @@ class AITemplateStableDiffusion(InferenceModel):
     ) -> List[Image.Image]:
         "Generates images from text"
 
-        from core.aitemplate.src.ait_txt2img import StableDiffusionAITPipeline
-        from core.aitemplate.src.dynamic_ait_txt2img import (
-            StableDiffusionDynamicAITPipeline,
-        )
-
         if self.type == "static":
+            from core.aitemplate.src.ait_txt2img import StableDiffusionAITPipeline
+
             cls = StableDiffusionAITPipeline
         else:
+            from core.aitemplate.src.dynamic_ait_txt2img import (
+                StableDiffusionDynamicAITPipeline,
+            )
+
             cls = StableDiffusionDynamicAITPipeline
 
         self.manage_optional_components()
@@ -331,6 +332,7 @@ class AITemplateStableDiffusion(InferenceModel):
             change_scheduler(
                 model=pipe,
                 scheduler=job.data.scheduler,
+                use_karras_sigmas=job.data.use_karras_sigmas,
             )
 
         total_images: List[Image.Image] = []
@@ -395,7 +397,11 @@ class AITemplateStableDiffusion(InferenceModel):
 
         generator = torch.Generator(self.device).manual_seed(job.data.seed)
 
-        change_scheduler(model=pipe, scheduler=job.data.scheduler)
+        change_scheduler(
+            model=pipe,
+            scheduler=job.data.scheduler,
+            use_karras_sigmas=job.data.use_karras_sigmas,
+        )
 
         input_image = convert_to_image(job.data.image)
         input_image = resize(input_image, job.data.width, job.data.height)
@@ -470,7 +476,11 @@ class AITemplateStableDiffusion(InferenceModel):
 
         generator = torch.Generator(self.device).manual_seed(job.data.seed)
 
-        change_scheduler(model=pipe, scheduler=job.data.scheduler)
+        change_scheduler(
+            model=pipe,
+            scheduler=job.data.scheduler,
+            use_karras_sigmas=job.data.use_karras_sigmas,
+        )
 
         from core.controlnet_preprocessing import image_to_controlnet_input
 

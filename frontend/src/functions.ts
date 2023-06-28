@@ -54,9 +54,9 @@ export function getTextBoundaries(elem: HTMLInputElement | null) {
   return [0, 0];
 }
 
-export function promptHandleKeyUp(e: KeyboardEvent) {
+export function promptHandleKeyUp(e: KeyboardEvent, data: any, key: string) {
   // Handle ArrowUp
-  if (e.key === "ArrowUp") {
+  if (e.key === "ArrowUp" && e.ctrlKey) {
     const values = getTextBoundaries(
       document.activeElement as HTMLInputElement
     );
@@ -90,6 +90,7 @@ export function promptHandleKeyUp(e: KeyboardEvent) {
         )}${afterString}`;
 
         elem.value = newString;
+        data[key] = newString;
 
         // Set the hightlight as it was lost after the value was changed
         elem.setSelectionRange(boundaryIndexStart, boundaryIndexEnd);
@@ -99,7 +100,9 @@ export function promptHandleKeyUp(e: KeyboardEvent) {
       const new_inner_string = `(${current_selection}:1.1)`;
       const beforeString = elem.value.substring(0, boundaryIndexStart);
       const afterString = elem.value.substring(boundaryIndexEnd);
+
       elem.value = `${beforeString}${new_inner_string}${afterString}`;
+      data[key] = `${beforeString}${new_inner_string}${afterString}`;
 
       // Set the hightlight as it was lost after the value was changed
       elem.setSelectionRange(boundaryIndexStart, boundaryIndexEnd + 6);
@@ -109,7 +112,7 @@ export function promptHandleKeyUp(e: KeyboardEvent) {
   }
 
   // Handle ArrowDown
-  if (e.key === "ArrowDown") {
+  if (e.key === "ArrowDown" && e.ctrlKey) {
     const values = getTextBoundaries(
       document.activeElement as HTMLInputElement
     );
@@ -143,6 +146,7 @@ export function promptHandleKeyUp(e: KeyboardEvent) {
         )}${afterString}`;
 
         elem.value = newString;
+        data[key] = newString;
 
         // Set the hightlight as it was lost after the value was changed
         elem.setSelectionRange(boundaryIndexStart, boundaryIndexEnd);
@@ -152,7 +156,9 @@ export function promptHandleKeyUp(e: KeyboardEvent) {
       const new_inner_string = `(${current_selection}:0.9)`;
       const beforeString = elem.value.substring(0, boundaryIndexStart);
       const afterString = elem.value.substring(boundaryIndexEnd);
+
       elem.value = `${beforeString}${new_inner_string}${afterString}`;
+      data[key] = `${beforeString}${new_inner_string}${afterString}`;
 
       // Set the hightlight as it was lost after the value was changed
       elem.setSelectionRange(boundaryIndexStart, boundaryIndexEnd + 6);
@@ -165,7 +171,7 @@ export function promptHandleKeyUp(e: KeyboardEvent) {
 export function promptHandleKeyDown(e: KeyboardEvent) {
   // Prevent arrow keys from moving the cursor
 
-  if (arrowKeys.includes(e.keyCode)) {
+  if (arrowKeys.includes(e.keyCode) && e.ctrlKey) {
     e.preventDefault();
   }
 }

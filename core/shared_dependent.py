@@ -8,11 +8,14 @@ if TYPE_CHECKING:
     from controlnet_aux import (
         CannyDetector,
         HEDdetector,
+        LineartAnimeDetector,
+        LineartDetector,
         MidasDetector,
         MLSDdetector,
+        NormalBaeDetector,
         OpenposeDetector,
     )
-    from transformers import UperNetForSemanticSegmentation
+    from transformers.models.upernet import UperNetForSemanticSegmentation
 
     from core.extra.cloudflare_r2 import R2Bucket
 
@@ -27,6 +30,9 @@ cached_controlnet_preprocessor: Union[
     "HEDdetector",
     "MLSDdetector",
     "OpenposeDetector",
+    "NormalBaeDetector",
+    "LineartDetector",
+    "LineartAnimeDetector",
     Tuple["Any", "UperNetForSemanticSegmentation"],
 ] = None
 

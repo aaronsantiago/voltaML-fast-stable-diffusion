@@ -11,7 +11,9 @@
               type="textarea"
               placeholder="Prompt"
               show-count
-              @keyup="promptHandleKeyUp"
+              @keyup="
+                promptHandleKeyUp($event, conf.data.settings.txt2img, 'prompt')
+              "
               @keydown="promptHandleKeyDown"
             >
               <template #count>{{ promptCount }}</template>
@@ -21,7 +23,13 @@
               type="textarea"
               placeholder="Negative prompt"
               show-count
-              @keyup="promptHandleKeyUp"
+              @keyup="
+                promptHandleKeyUp(
+                  $event,
+                  conf.data.settings.txt2img,
+                  'negative_prompt'
+                )
+              "
               @keydown="promptHandleKeyDown"
             >
               <template #count>{{ negativePromptCount }}</template>
@@ -36,8 +44,7 @@
                 The sampler is the method used to generate the image. Your
                 result may vary drastically depending on the sampler you choose.
                 <b class="highlight"
-                  >We recommend using Euler A for the best results (but it also
-                  takes more time).
+                  >We recommend using DPMSolverMultistep for the best results .
                 </b>
                 <a
                   target="_blank"
@@ -50,6 +57,25 @@
                 :options="conf.scheduler_options"
                 v-model:value="conf.data.settings.txt2img.sampler"
                 style="flex-grow: 1"
+              />
+            </div>
+
+            <!-- Karras Sigmas -->
+            <div class="flex-container">
+              <NTooltip style="max-width: 600px">
+                <template #trigger>
+                  <p style="width: 120px">Karras Sigmas</p>
+                </template>
+                Changes the sigmas used in the Karras diffusion process. Might
+                provide better results for some images.
+                <b class="highlight"
+                  >Works only with KDPM samplers. Ignored by other samplers.</b
+                >
+              </NTooltip>
+
+              <NSwitch
+                v-model:value="conf.data.settings.txt2img.use_karras_sigmas"
+                style="justify-self: flex-end"
               />
             </div>
 
@@ -413,9 +439,17 @@
                 :options="[
                   { label: 'Nearest', value: 'nearest' },
                   { label: 'Nearest exact', value: 'nearest-exact' },
-                  { label: 'Linear', value: 'linear' },
+                  { label: 'Area', value: 'area' },
                   { label: 'Bilinear', value: 'bilinear' },
                   { label: 'Bicubic', value: 'bicubic' },
+                  {
+                    label: 'Bislerp (Original, slow)',
+                    value: 'bislerp-original',
+                  },
+                  {
+                    label: 'Bislerp (Tortured, fast)',
+                    value: 'bislerp-tortured',
+                  },
                 ]"
               />
             </div>
@@ -533,6 +567,7 @@ const generate = () => {
         batch_count: conf.data.settings.txt2img.batch_count,
         scheduler: conf.data.settings.txt2img.sampler,
         self_attention_scale: conf.data.settings.txt2img.self_attention_scale,
+        use_karras_sigmas: conf.data.settings.txt2img.use_karras_sigmas,
       },
       model: conf.data.settings.model?.name,
       backend: "PyTorch",

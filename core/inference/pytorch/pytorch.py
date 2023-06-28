@@ -23,9 +23,9 @@ from core.config import config
 from core.flags import HighResFixFlag
 from core.inference.base_model import InferenceModel
 from core.inference.functions import load_pytorch_pipeline
-from core.inference.latents import scale_latents
-from core.inference.lwp import get_weighted_text_embeddings
-from core.inference.lwp_sd import StableDiffusionLongPromptWeightingPipeline
+from core.inference.pytorch.latents import scale_latents
+from core.inference.pytorch.lwp import get_weighted_text_embeddings
+from core.inference.pytorch.lwp_sd import StableDiffusionLongPromptWeightingPipeline
 from core.inference_callbacks import (
     controlnet_callback,
     img2img_callback,
@@ -56,10 +56,12 @@ class PyTorchStableDiffusion(InferenceModel):
         auth_token: str = os.environ["HUGGINGFACE_TOKEN"],
         device: str = "cuda",
         autoload: bool = True,
+        bare: bool = False,
     ) -> None:
         super().__init__(model_id, device)
 
         self.backend: Backend = "PyTorch"
+        self.bare: bool = bare
 
         # HuggingFace
         self.auth: str = auth_token
@@ -93,6 +95,7 @@ class PyTorchStableDiffusion(InferenceModel):
             self.model_id,
             auth=self.auth,
             device=self.device,
+            optimize=not self.bare,
         )
 
         self.vae = pipe.vae  # type: ignore
@@ -104,41 +107,42 @@ class PyTorchStableDiffusion(InferenceModel):
         self.requires_safety_checker = False  # type: ignore
         self.safety_checker = pipe.safety_checker  # type: ignore
 
-        # Autoload LoRAs
-        for lora_name in config.api.autoloaded_loras:
-            lora = config.api.autoloaded_loras[lora_name]
+        if not self.bare:
+            # Autoload LoRAs
+            for lora_name in config.api.autoloaded_loras:
+                lora = config.api.autoloaded_loras[lora_name]
 
-            try:
-                self.load_lora(
-                    lora_name,
-                    alpha_text_encoder=lora["text_encoder"],
-                    alpha_unet=lora["unet"],
-                )
-            except Exception as e:  # pylint: disable=broad-except
-                logger.warning(f"Failed to load LoRA {lora}: {e}")
-                websocket_manager.broadcast_sync(
-                    Notification(
-                        severity="error",
-                        message=f"Failed to load LoRA: {lora}",
-                        title="Autoload Error",
+                try:
+                    self.load_lora(
+                        lora_name,
+                        alpha_text_encoder=lora["text_encoder"],
+                        alpha_unet=lora["unet"],
                     )
-                )
+                except Exception as e:  # pylint: disable=broad-except
+                    logger.warning(f"Failed to load LoRA {lora}: {e}")
+                    websocket_manager.broadcast_sync(
+                        Notification(
+                            severity="error",
+                            message=f"Failed to load LoRA: {lora}",
+                            title="Autoload Error",
+                        )
+                    )
 
-        # Autoload textual inversions
-        for textural_inversion in config.api.autoloaded_textual_inversions:
-            try:
-                self.load_textual_inversion(textural_inversion)
-            except Exception as e:  # pylint: disable=broad-except
-                logger.warning(
-                    f"Failed to load textual inversion {textural_inversion}: {e}"
-                )
-                websocket_manager.broadcast_sync(
-                    Notification(
-                        severity="error",
-                        message=f"Failed to load textual inversion: {textural_inversion}",
-                        title="Autoload Error",
+            # Autoload textual inversions
+            for textural_inversion in config.api.autoloaded_textual_inversions:
+                try:
+                    self.load_textual_inversion(textural_inversion)
+                except Exception as e:  # pylint: disable=broad-except
+                    logger.warning(
+                        f"Failed to load textual inversion {textural_inversion}: {e}"
                     )
-                )
+                    websocket_manager.broadcast_sync(
+                        Notification(
+                            severity="error",
+                            message=f"Failed to load textual inversion: {textural_inversion}",
+                            title="Autoload Error",
+                        )
+                    )
 
         # Free up memory
         del pipe
@@ -241,6 +245,7 @@ class PyTorchStableDiffusion(InferenceModel):
             change_scheduler(
                 model=pipe,
                 scheduler=job.data.scheduler,
+                use_karras_sigmas=job.data.use_karras_sigmas,
             )
 
         total_images: List[Image.Image] = []
@@ -335,7 +340,11 @@ class PyTorchStableDiffusion(InferenceModel):
         else:
             generator = torch.Generator(config.api.device).manual_seed(job.data.seed)
 
-        change_scheduler(model=pipe, scheduler=job.data.scheduler)
+        change_scheduler(
+            model=pipe,
+            scheduler=job.data.scheduler,
+            use_karras_sigmas=job.data.use_karras_sigmas,
+        )
 
         # Preprocess the image
         input_image = convert_to_image(job.data.image)
@@ -419,7 +428,11 @@ class PyTorchStableDiffusion(InferenceModel):
         else:
             generator = torch.Generator(config.api.device).manual_seed(job.data.seed)
 
-        change_scheduler(model=pipe, scheduler=job.data.scheduler)
+        change_scheduler(
+            model=pipe,
+            scheduler=job.data.scheduler,
+            use_karras_sigmas=job.data.use_karras_sigmas,
+        )
 
         # Preprocess images
         input_image = convert_to_image(job.data.image).convert("RGB")
@@ -526,7 +539,11 @@ class PyTorchStableDiffusion(InferenceModel):
         else:
             generator = torch.Generator(config.api.device).manual_seed(job.data.seed)
 
-        change_scheduler(model=pipe, scheduler=job.data.scheduler)
+        change_scheduler(
+            model=pipe,
+            scheduler=job.data.scheduler,
+            use_karras_sigmas=job.data.use_karras_sigmas,
+        )
 
         # Preprocess the image
         from core.controlnet_preprocessing import image_to_controlnet_input

@@ -183,13 +183,7 @@
 
 <script lang="ts" setup>
 import { serverUrl } from "@/env";
-import {
-  CloudUpload,
-  GitCompare,
-  PlayForward,
-  Settings,
-  TrashBin,
-} from "@vicons/ionicons5";
+import { CloudUpload, Settings, TrashBin } from "@vicons/ionicons5";
 import {
   NButton,
   NCard,
@@ -230,21 +224,27 @@ const filteredModels = computed(() => {
 });
 
 const pyTorchModels = computed(() => {
-  return filteredModels.value.filter((model) => {
-    return model.backend === "PyTorch" && model.valid === true;
-  });
+  return filteredModels.value
+    .filter((model) => {
+      return model.backend === "PyTorch" && model.valid === true;
+    })
+    .sort((a, b) => (a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1));
 });
 
 const loraModels = computed(() => {
-  return filteredModels.value.filter((model) => {
-    return model.backend === "LoRA";
-  });
+  return filteredModels.value
+    .filter((model) => {
+      return model.backend === "LoRA";
+    })
+    .sort((a, b) => (a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1));
 });
 
 const textualInversionModels = computed(() => {
-  return filteredModels.value.filter((model) => {
-    return model.backend === "Textual Inversion";
-  });
+  return filteredModels.value
+    .filter((model) => {
+      return model.backend === "Textual Inversion";
+    })
+    .sort((a, b) => (a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1));
 });
 
 function createPyTorchOptions(model_path: string) {
@@ -254,16 +254,16 @@ function createPyTorchOptions(model_path: string) {
       key: `delete:${model_path}`,
       icon: renderIcon(TrashBin),
     },
-    {
-      label: "Convert",
-      key: `convert:${model_path}`,
-      icon: renderIcon(GitCompare),
-    },
-    {
-      label: "Accelerate",
-      key: `accelerate:${model_path}`,
-      icon: renderIcon(PlayForward),
-    },
+    // {
+    //   label: "Convert",
+    //   key: `convert:${model_path}`,
+    //   icon: renderIcon(GitCompare),
+    // },
+    // {
+    //   label: "Accelerate",
+    //   key: `accelerate:${model_path}`,
+    //   icon: renderIcon(PlayForward),
+    // },
   ];
 }
 

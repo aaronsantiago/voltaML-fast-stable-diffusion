@@ -23,23 +23,25 @@ export interface IAutoloadedLora {
 }
 
 export interface IQuantDict {
-  vae_decoder: boolean | null;
-  vae_encoder: boolean | null;
-  unet: boolean | null;
-  text_encoder: boolean | null;
+  vae_decoder: "no-quant" | "uint8" | "int8";
+  vae_encoder: "no-quant" | "uint8" | "int8";
+  unet: "no-quant" | "uint8" | "int8";
+  text_encoder: "no-quant" | "uint8" | "int8";
 }
 
 export interface ISettings {
   $schema: string;
-  backend: "PyTorch" | "TensorRT" | "AITemplate" | "unknown";
+  backend: "PyTorch" | "TensorRT" | "AITemplate" | "ONNX" | "unknown";
   model: ModelEntry | null;
   extra: {
     highres: {
       scale: number;
       latent_scale_mode:
         | "nearest"
-        | "linear"
+        | "area"
         | "bilinear"
+        | "bislerp-original"
+        | "bislerp-tortured"
         | "bicubic"
         | "nearest-exact";
       strength: number;
@@ -64,6 +66,7 @@ export interface ISettings {
     batch_count: number;
     batch_size: number;
     self_attention_scale: number;
+    use_karras_sigmas: boolean;
   };
   img2img: {
     prompt: string;
@@ -79,6 +82,7 @@ export interface ISettings {
     denoising_strength: number;
     image: string;
     self_attention_scale: number;
+    use_karras_sigmas: boolean;
   };
   inpainting: {
     prompt: string;
@@ -94,6 +98,7 @@ export interface ISettings {
     image: string;
     mask_image: string;
     self_attention_scale: number;
+    use_karras_sigmas: boolean;
   };
   controlnet: {
     prompt: string;
@@ -113,21 +118,7 @@ export interface ISettings {
     is_preprocessed: boolean;
     save_preprocessed: boolean;
     return_preprocessed: boolean;
-  };
-  sd_upscale: {
-    prompt: string;
-    negative_prompt: string;
-    seed: number;
-    cfg_scale: number;
-    steps: number;
-    batch_count: number;
-    batch_size: number;
-    sampler: Sampler;
-    tile_size: number;
-    tile_border: number;
-    original_image_slice: number;
-    noise_level: number;
-    image: string;
+    use_karras_sigmas: boolean;
   };
   upscale: {
     image: string;
@@ -156,7 +147,13 @@ export interface ISettings {
     tomesd_downsample_layers: 1 | 2 | 4 | 8;
 
     autocast: boolean;
-    attention_processor: "xformers" | "sdpa" | "cross-attention";
+    attention_processor:
+      | "xformers"
+      | "sdpa"
+      | "cross-attention"
+      | "subquadratic"
+      | "multihead";
+    subquadratic_size: number;
     attention_slicing: "auto" | number | "disabled";
     channels_last: boolean;
     vae_slicing: boolean;
@@ -177,12 +174,15 @@ export interface ISettings {
 
     autoloaded_loras: Map<string, IAutoloadedLora>;
     autoloaded_textual_inversions: string[];
+
+    save_path_template: string;
   };
   aitemplate: {
     num_threads: number;
   };
   onnx: {
     quant_dict: IQuantDict;
+    convert_to_fp16: boolean;
     simplify_unet: boolean;
   };
   bot: {
@@ -192,6 +192,8 @@ export interface ISettings {
   };
   frontend: {
     theme: "dark" | "light";
+    enable_theme_editor: boolean;
+    image_browser_columns: number;
     on_change_timer: number;
   };
 }
@@ -226,6 +228,7 @@ export const defaultSettings: ISettings = {
     batch_size: 1,
     negative_prompt: "",
     self_attention_scale: 0,
+    use_karras_sigmas: false,
   },
   img2img: {
     width: 512,
@@ -241,6 +244,7 @@ export const defaultSettings: ISettings = {
     denoising_strength: 0.6,
     image: "",
     self_attention_scale: 0,
+    use_karras_sigmas: false,
   },
   inpainting: {
     prompt: "",
@@ -256,6 +260,7 @@ export const defaultSettings: ISettings = {
     batch_size: 1,
     sampler: Sampler.DPMSolverMultistep,
     self_attention_scale: 0,
+    use_karras_sigmas: false,
   },
   controlnet: {
     prompt: "",
@@ -275,21 +280,7 @@ export const defaultSettings: ISettings = {
     is_preprocessed: false,
     save_preprocessed: false,
     return_preprocessed: true,
-  },
-  sd_upscale: {
-    prompt: "",
-    negative_prompt: "",
-    seed: -1,
-    cfg_scale: 7,
-    steps: 75,
-    batch_count: 1,
-    batch_size: 1,
-    sampler: Sampler.DPMSolverMultistep,
-    tile_size: 128,
-    tile_border: 32,
-    original_image_slice: 32,
-    noise_level: 40,
-    image: "",
+    use_karras_sigmas: false,
   },
   upscale: {
     image: "",
@@ -309,6 +300,7 @@ export const defaultSettings: ISettings = {
     concurrent_jobs: 1,
     autocast: true,
     attention_processor: "xformers",
+    subquadratic_size: 512,
     attention_slicing: "disabled",
     channels_last: true,
     vae_slicing: false,
@@ -330,17 +322,19 @@ export const defaultSettings: ISettings = {
     lora_unet_weight: 0.5,
     autoloaded_loras: new Map(),
     autoloaded_textual_inversions: [],
+    save_path_template: "{folder}/{prompt}/{id}-{index}.{extension}",
   },
   aitemplate: {
     num_threads: 8,
   },
   onnx: {
     quant_dict: {
-      text_encoder: null,
-      unet: null,
-      vae_decoder: null,
-      vae_encoder: null,
+      text_encoder: "no-quant",
+      unet: "no-quant",
+      vae_decoder: "no-quant",
+      vae_encoder: "no-quant",
     },
+    convert_to_fp16: true,
     simplify_unet: false,
   },
   bot: {
@@ -350,6 +344,8 @@ export const defaultSettings: ISettings = {
   },
   frontend: {
     theme: "dark",
+    enable_theme_editor: false,
+    image_browser_columns: 5,
     on_change_timer: 2000,
   },
 };

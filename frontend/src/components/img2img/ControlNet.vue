@@ -18,7 +18,13 @@
               type="textarea"
               placeholder="Prompt"
               show-count
-              @keyup="promptHandleKeyUp"
+              @keyup="
+                promptHandleKeyUp(
+                  $event,
+                  conf.data.settings.controlnet,
+                  'prompt'
+                )
+              "
               @keydown="promptHandleKeyDown"
             >
               <template #count>{{ promptCount }}</template>
@@ -28,7 +34,13 @@
               type="textarea"
               placeholder="Negative prompt"
               show-count
-              @keyup="promptHandleKeyUp"
+              @keyup="
+                promptHandleKeyUp(
+                  $event,
+                  conf.data.settings.controlnet,
+                  'negative_prompt'
+                )
+              "
               @keydown="promptHandleKeyDown"
             >
               <template #count>{{ negativePromptCount }}</template>
@@ -43,8 +55,7 @@
                 The sampler is the method used to generate the image. Your
                 result may vary drastically depending on the sampler you choose.
                 <b class="highlight"
-                  >We recommend using Euler A for the best results (but it also
-                  takes more time).
+                  >We recommend using DPMSolverMultistep for the best results .
                 </b>
                 <a
                   target="_blank"
@@ -60,6 +71,25 @@
               />
             </div>
 
+            <!-- Karras Sigmas -->
+            <div class="flex-container">
+              <NTooltip style="max-width: 600px">
+                <template #trigger>
+                  <p style="width: 120px">Karras Sigmas</p>
+                </template>
+                Changes the sigmas used in the Karras diffusion process. Might
+                provide better results for some images.
+                <b class="highlight"
+                  >Works only with KDPM samplers. Ignored by other samplers.</b
+                >
+              </NTooltip>
+
+              <NSwitch
+                v-model:value="conf.data.settings.controlnet.use_karras_sigmas"
+                style="justify-self: flex-end"
+              />
+            </div>
+
             <!-- ControlNet mode -->
             <div class="flex-container">
               <NTooltip style="max-width: 600px">
@@ -72,6 +102,8 @@
               <NSelect
                 :options="conf.controlnet_options"
                 v-model:value="conf.data.settings.controlnet.controlnet"
+                filterable
+                tag
                 style="flex-grow: 1"
               />
             </div>
@@ -481,6 +513,8 @@ const generate = () => {
         detection_resolution:
           conf.data.settings.controlnet.detection_resolution,
         scheduler: conf.data.settings.controlnet.sampler,
+        use_karras_sigmas: conf.data.settings.controlnet.use_karras_sigmas,
+
         canny_low_threshold: 100,
         canny_high_threshold: 200,
         mlsd_thr_v: 0.1,

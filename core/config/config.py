@@ -121,7 +121,10 @@ class APIConfig:
 
     # General optimizations
     autocast: bool = False
-    attention_processor: Literal["xformers", "sdpa", "cross_attention"] = "xformers"
+    attention_processor: Literal[
+        "xformers", "sdpa", "cross-attention", "subquadratic", "multihead"
+    ] = "sdpa"
+    subquadratic_size: int = 512
     attention_slicing: Union[int, Literal["auto", "disabled"]] = "disabled"
     channels_last: bool = True
     vae_slicing: bool = True
@@ -153,6 +156,9 @@ class APIConfig:
     # Autoload
     autoloaded_loras: Dict[str, Dict] = field(default_factory=dict)
     autoloaded_textual_inversions: List[str] = field(default_factory=list)
+
+    # Save paths
+    save_path_template: str = "{folder}/{prompt}/{id}-{index}.{extension}"
 
     @property
     def dtype(self):
@@ -232,6 +238,8 @@ class FrontendConfig:
     "Configuration for the frontend"
 
     theme: Literal["dark", "light"] = "dark"
+    enable_theme_editor: bool = False
+    image_browser_columns: int = 5
     on_change_timer: int = 0
 
 
@@ -239,8 +247,6 @@ class FrontendConfig:
 @dataclass
 class Configuration(DataClassJsonMixin):
     "Main configuration class for the application"
-
-    # default_factory= instead of default= so we're python3.11 compatible
 
     txt2img: Txt2ImgConfig = field(default_factory=Txt2ImgConfig)
     img2img: Img2ImgConfig = field(default_factory=Img2ImgConfig)
